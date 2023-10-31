@@ -3,6 +3,7 @@ Code required to run chi-score comparisons of amino acid sequences and intra-seq
 1. A Python module that can be imported directly into an environment running Python3. This file has all functions annotated with their purpose and/or outputs described. (chi_score_analysis.py)
 2. A Jupyter Notebook file that walks the user through each step of the analysis, allowing for investigation of the output(s) from each step. (chiscore_walkthrough.ipynb)
 3. A streamlined Jupyter Notebook file that perfoms the entire analysis in one executable cell with user-defined input and parameters. (chiscore_quickstart.ipynb)
+
 For the most user-friendly experience, we recommend using the quick-start notebook, as this can perform the installation, analyis, and visualization in three short cells. 
 
 # Instructions
