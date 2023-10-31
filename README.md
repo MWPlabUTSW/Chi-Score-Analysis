@@ -1,8 +1,8 @@
 # Chi-Score-Analysis
 Code required to run chi-score comparisons of amino acid sequences and intra-sequential analyses of compositional modularity. Analysis is available in three formats:
-1. A Python module that can be imported directly into an environment running Python3. This file has all functions annotated with their purpose and/or outputs described.
+1. A Python module that can be imported directly into an environment running Python3. This file has all functions annotated with their purpose and/or outputs described. (chi_score_analysis.py)
 2. A Jupyter Notebook file that walks the user through each step of the analysis, allowing for investigation of the output(s) from each step.
-3. A streamlined Jupyter Notebook file that perfoms the entire analysis in one executable cell with user-defined input and parameters.
+3. A streamlined Jupyter Notebook file that perfoms the entire analysis in one executable cell with user-defined input and parameters. (chiscore_quickstart.ipynb)
 
 # Instructions
 The Chi-Score Analysis is available as a Python package that give the user free use of the analysis and its many functions. To do this, simply download the chi_score_analysis.py file to an environment running Python3 and all dependencies installed (see below). We recommend importing the module as 'xid', which is used in both available Jupyter Notebook files.
