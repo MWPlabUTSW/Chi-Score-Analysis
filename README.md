@@ -17,6 +17,9 @@ For the most streamlined use of the algorithm, the Chi-Score Analysis is also av
 - cutoff: the z-score corresponding to the confidence level at which the analysis will stop iteratively removing low-scoring boundaries (1.96, or 95%, by default)
 - plot: whether the user would like the results plotted; this will involve additional parameters that the user may adjust which are explained further in the notebook
 
+# Google Colab Notebook
+The Chi-Score Analysis has also been implemented as a Google Colab Notebook, which can be found at https://colab.research.google.com/github/MWPlabUTSW/Chi-Score-Analysis/blob/main/ChiScore_Analysis.ipynb
+
 # Dependencies
 The Chi-Score Analysis is dependent on the following Python packages, which must be installed in the environment which the user wishes to run the algorithm:
 - jupyter >= 1.0.0
