@@ -6,6 +6,9 @@ Code required to run chi-score comparisons of amino acid sequences and intra-seq
 
 For the most user-friendly experience, we recommend using the quick-start notebook, as this can perform the installation, analyis, and visualization in three short cells. 
 
+# Google Colab Notebook
+The Chi-Score Analysis has also been implemented as a Google Colab Notebook, which can be found at https://colab.research.google.com/github/MWPlabUTSW/Chi-Score-Analysis/blob/main/ChiScore_Analysis.ipynb
+
 # Instructions
 The Chi-Score Analysis is available as a Python package that give the user free use of the analysis and its many functions. To do this, simply download the chi_score_analysis.py file to an environment running Python3 and all dependencies installed (see below). We recommend importing the module as 'xid', which is used in both available Jupyter Notebook files.
 
@@ -16,9 +19,6 @@ For the most streamlined use of the algorithm, the Chi-Score Analysis is also av
 - window_sizes: the window sizes to use when gathering initial set of boundaries (6, 8, 10, 12, 14, 16, 18, 20, and 22 by default)
 - cutoff: the z-score corresponding to the confidence level at which the analysis will stop iteratively removing low-scoring boundaries (1.96, or 95%, by default)
 - plot: whether the user would like the results plotted; this will involve additional parameters that the user may adjust which are explained further in the notebook
-
-# Google Colab Notebook
-The Chi-Score Analysis has also been implemented as a Google Colab Notebook, which can be found at https://colab.research.google.com/github/MWPlabUTSW/Chi-Score-Analysis/blob/main/ChiScore_Analysis.ipynb
 
 # Dependencies
 The Chi-Score Analysis is dependent on the following Python packages, which must be installed in the environment which the user wishes to run the algorithm:
