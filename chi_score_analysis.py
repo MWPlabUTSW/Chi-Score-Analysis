@@ -44,14 +44,24 @@ residue_groups = {'two': [['L', 'V', 'I', 'M', 'C', 'A', 'G', 'S', 'T', 'P', 'F'
 
 
 def count_residues_in_sequence(sequence, residue):
-    ## Counts number of 'residue' in 'sequence' ##
+    ''' 
+    Counts number of 'residue' in 'sequence'
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    residue: single-character string corresponding to amino acid (ex: 'A' for alanine)
+    Outputs integer residue count
+    '''
     residue_count = 0
     residue_count += sequence.count(residue)
     return residue_count
 
 
 def get_observed_values(sequence_1, sequence_2, groups='twenty'):
-    ## Computes observed values for chi-score calculation for amino acid groups in compared sequences ##
+    ''' 
+    Computes observed values for chi-score calculation for amino acid groups in compared sequences
+    sequence_1/2: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    groups: amino acid grouping scheme to use, see 'residue groups' for list of grouping schemes
+    Outputs 2 x (# of residue groups) matrix of integer observed values
+    '''
     obs = np.zeros((2, len(residue_groups[groups])))
     fracsall1 = list()
     for group in residue_groups[groups]:
@@ -71,7 +81,12 @@ def get_observed_values(sequence_1, sequence_2, groups='twenty'):
 
 
 def get_expected_values(observed_values, ratio = 0.5):
-    ## Computes expected values from observed values ##
+    ''' 
+    Computes expected values from observed values
+    observed_values: 2 x (# of residue groups) matrix of integer observed values
+    ratio: length ratio of compared sequences; for intramolecular analyses this should always be 0.5
+    Outputs 2 x (# of residue groups) matrix of float expected values
+    '''
     exp = np.zeros((2, len(observed_values[0])))
     for seqs in [0, 1]:
         for group in range(0, len(observed_values[0])):
@@ -81,7 +96,13 @@ def get_expected_values(observed_values, ratio = 0.5):
 
 
 def get_chi_score(observed_values, expected_values, res_conts=False):
-    ## Computes chi-score from observed and expected values ##
+    ''' 
+    Computes chi-score from observed and expected values
+    observed_values: 2 x (# of residue groups) matrix of integer observed values
+    expected_values: 2 x (# of residue groups) matrix of float expected values
+    res_conts: if TRUE, outputs list of float chi-scores for each residue group
+    Outputs chi-score for the input obs. and exp. values
+    '''
     chi_scores = np.zeros((2, len(observed_values[0])))
     for seqs in [0, 1]:
         for group in range(len(observed_values[0])):
@@ -90,7 +111,6 @@ def get_chi_score(observed_values, expected_values, res_conts=False):
                     (observed_values[seqs, group] - expected_values[seqs, group])**2) / expected_values[seqs, group]
             else:
                 chi_scores[seqs, group] = 0
-    ## If res_conts is True, returns list of the contributions of each residue group ##
     if res_conts is True:
         return [np.sum(chi_scores[:, group]) / np.sum(observed_values) for group in range(len(observed_values[0]))]
     else:
@@ -98,42 +118,57 @@ def get_chi_score(observed_values, expected_values, res_conts=False):
 
 
 def calculate_chi_score(sequence_1, sequence_2, groups='twenty'):
-    ## Combines above functions into one that computes chi-score between two sequences ##
+    ''' 
+    Calculates chi-score between two input sequences
+    sequence_1/2: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    groups: amino acid grouping scheme to use, see 'residue groups' for list of grouping schemes
+    Outputs float chi-score for input sequences
+    '''
     obs = get_observed_values(sequence_1, sequence_2, groups)
     exp = get_expected_values(obs)
     return get_chi_score(obs, exp)
 
 
 def get_heatmap_scores(sequence, window, groups='twenty'):
+    '''
+    Computes pairwise matrix of subsequence chi-scores for input sequence
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    window: integer value for length of subsequences to use (EVEN INTEGERS RECOMMENDED)
+    groups: amino acid grouping scheme to use, see 'residue groups' for list of grouping schemes
+    '''
     slen = len(sequence)
     nwin = slen - (window - 1)
     seqs = list()
-    ## Define all subsequences in sequence ##
     for windows in range(0, nwin):
         subseq = sequence[windows:windows + window]
         seqs.append(subseq)
-    ## Compute pairwise chi-scores between subsequences ##
     scores = np.zeros((nwin, nwin))
     for x in range(0, nwin):
         for y in range(0, nwin):
             scores[x, y] = calculate_chi_score(seqs[x], seqs[y], groups)
-    ## Returns matrix of pairwise scores ##
     return scores
 
 
 def get_corr_scores(scores):
-    ## Performs Pearson Correlation on pairwise chi-score matrix ##
+    ''' 
+    Performs Pearson Correlation on pairwise chi-score matrix
+    scores: matrix of pairwise subsequence chi-scores
+    Outputs matrix of pairwise subsequence correlation coefficients
+    '''
     df = pd.DataFrame(scores)
     dfcorr = df.corr()
     corr_scores = dfcorr.to_numpy()
-    ## Returns matrix of correlation coefficients ##
     return corr_scores
 
 
 def get_insulation_scores(corr_matrix, s):
-    ## Computes insulation scores from matrix of correlation coefficients in square window of size 's' ##
+    ''' 
+    Computes insulation scores from matrix of correlation coefficients in square window of size 's'
+    corr_matrix: matrix of pairwise subsequence correlation coefficients
+    s: side length for sliding square widow
+    Outputs list of mean correlation coefficients contained in the window as it slides along the diagonal of corr_matrix
+    '''
     n_scores = len(corr_matrix)
-    ## Define square windows from which scores are calculated ##
     windows = list()
     for x in range(n_scores):
         if x < (s - 1) / 2:
@@ -145,12 +180,15 @@ def get_insulation_scores(corr_matrix, s):
         else:
             windows.append(
                 corr_matrix[x - int((s - 1) / 2):, x - int((s - 1) / 2):])
-    ## Returns list of scores, one for each subsequence in the matrix ##
     return [np.mean(window) for window in windows]
 
 
 def get_minima(insulation_scores):
-    ## Identifies local minima (potential boundaries) from insulation scores ##
+    ''' 
+    Identifies local minima (potential boundaries) from insulation scores
+    insualtion_scores: list of float insualtion scores
+    Outputs list of x-values corresponding to significant minima
+    '''
     minima = list()
     min_scores = list()
     for x in np.arange(1, len(insulation_scores) - 1, 1):
@@ -161,7 +199,6 @@ def get_minima(insulation_scores):
     for x in range(len(minima)):
         min_array[x, 0], min_array[x, 1] = minima[x], min_scores[x]
     min_array = min_array[min_array[:, 1].argsort()]
-    ## Excessively close minima rejected by excluding those within 10 residues of lowest scoring minimum ##
     solution = list()
     blacklist = list()
     for row in min_array:
@@ -171,12 +208,16 @@ def get_minima(insulation_scores):
             for residue in black_range:
                 blacklist.append(residue)
     solution.sort()
-    ## Returns list of positions (x-values) corresponding to minima ##
     return solution
 
 
 def subsequence_to_boundary(subsequence_indices, subsequence_length):
-    ## Converts subsequence indices to residue indices (where boundary actually occurs) ##
+    ''' 
+    Converts subsequence indices to residue indices (where boundary actually occurs)
+    subsequence_indices: the indices of subsequences identified as insulation score minima
+    subsequence_length: the length of the subsequences being compared (window used in get_heatmap_scores())
+    Outputs indices of potential boundary positions on the original sequence
+    '''
     boundary_indices = list()
     for index in subsequence_indices:
         boundary_indices.append(index + (subsequence_length / 2))
@@ -184,7 +225,12 @@ def subsequence_to_boundary(subsequence_indices, subsequence_length):
 
 
 def get_region_scores(sequence, optimized_nodes):
-    ## Computes chi-scores between neighboring regions (separated by a node) ##
+    '''
+    Computes chi-scores between neighboring regions (separated by a boundary)
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    optimized_nodes: positions of boundaries to be scored
+    Outputs list of chi-scores corresponding to input boundaries
+    '''
     boundaries = [0]
     for node in optimized_nodes:
         if int(node) not in boundaries:
@@ -193,14 +239,12 @@ def get_region_scores(sequence, optimized_nodes):
     if len(boundaries) == 2:
         return 0
     else:
-        ## Defines modules from boundary positions ##
         nregions = len(boundaries) - 1
         regions = list()
         for region in range(0, nregions):
             regions.append(sequence[boundaries[region]:boundaries[region + 1]])
         scores = list()
         for x in range(0, nregions):
-            ## Computes chi-score between the two modules separated by each boundary ##
             for y in range(0, nregions):
                 if y == x - 1:
                     if len(regions[x]) < 1 or len(regions[y]) < 1:
@@ -208,12 +252,16 @@ def get_region_scores(sequence, optimized_nodes):
                     else:
                         scores.append(calculate_chi_score(
                             regions[x], regions[y]))
-        ## Returns list of chi-scores corresponding to boundaries in 'optimized_nodes' ##
         return scores
 
 
 def get_modules(sequence, boundaries):
-    ## Returns amino acid sequences of modules in 'sequence' as defined by 'boundaries' ##
+    '''
+    Returns amino acid sequences of modules in 'sequence' as defined by 'boundaries'
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    boundaries: list of positions denoting where to parse sequence (boundary at 10 splits residues 1-10 from 11-)
+    Outputs list of module sequences as strings
+    '''
     bounds = [0]
     for bound in boundaries:
         bounds.append(bound)
@@ -225,7 +273,12 @@ def get_modules(sequence, boundaries):
 
 
 def optimize_boundaries(sequence, groups):
-    ## Determines the optimal placement for each boundary in 'groups' for 'sequence' ##
+    ''' 
+    Determines the optimal placement for each boundary in 'groups' for 'sequence'
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    groups: list of lists, each containing numeric boundary positions to consider
+    Outputs list of boundary positions, each from a group in 'groups', that maximize intermodular chi-scores
+    '''
     start_sols = list()
     for group in groups:
         if group[0] == 0:
@@ -241,7 +294,6 @@ def optimize_boundaries(sequence, groups):
         end = 1
     else:
         end = 0
-    ## From left to right, three consecutve boundary positions are varied at a time, with the central position optimized in each step ##
     while count < len(groups) - end:
         xs = groups[count]
         if len(groups) >= 2:
@@ -268,14 +320,17 @@ def optimize_boundaries(sequence, groups):
     for boundary in start_sols:
         if boundary != 0:
             optimized_sols.append(boundary)
-    ## Returns single list of optimized boundary placements ##
     return optimized_sols
 
 
 def get_complexity(sequence, window):
-    ## Computes local sequence complexities as Shannon Entropy in 'sequence' with specified 'window' size ##
+    ''' 
+    Computes local sequence complexities as Shannon Entropy in 'sequence' with specified 'window' size
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    window: length of subsequences for which each entropy is calculated
+    Outputs list of entropies corresponding to each subsequence
+    '''
     nwin = len(sequence) - (window - 1)
-    ## Define all subsequences of length 'window' ##
     subseqs = list()
     for windows in np.arange(0, nwin, 1):
         subseq = sequence[windows:windows + window]
@@ -283,24 +338,22 @@ def get_complexity(sequence, window):
     complexities = list()
     for seq in subseqs:
         pk = list()
-        ## Determine probability distribution of each residue in subseqeunce ##
         for res in ['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']:
             pk.append(count_residues_in_sequence(seq, res) / len(seq))
-        ## Compute Shannon Entropy from probability distribution ##
         complexities.append(entropy(pk))
-    ## Returns list of complexity scores ##
     return complexities
 
 
 def cluster_boundaries(window_groups):
-    ## Changes grouping of 'window_groups' from which window size was used to residue proximity ##
-    ## Input list is grouped by which window size was used to determine placements ##
+    '''
+    Takes boundaries clustered by window size and clusters them by residue position
+    window_groups: the boundary positions as determined by different window sizes, input as list of lists
+    Outputs boundary positions clustered spatially, so that potential placements of the same boundary are grouped together
+    '''
     boundaries0 = window_groups[0].copy()
-    ## Initial boundary groups defined by first group in 'window_groups' ##
     boundary_groups = list()
     for boundary in boundaries0:
         boundary_groups.append([boundary])
-    ## In the other 'window_groups', each residue is clustered with its nearest boundary group that is already defined ##
     for group in window_groups:
         if group != boundaries0:
             for node in group:
@@ -314,7 +367,6 @@ def cluster_boundaries(window_groups):
                     node_index = np.column_stack(
                         np.where(diffs == np.min(diffs)))
                     boundary_groups[node_index[0][0]].append(node)
-    ## Each new group is sorted from low to high boundary positions ##
     sorted_groups = list()
     for group in boundary_groups:
         new_group = list()
@@ -323,12 +375,18 @@ def cluster_boundaries(window_groups):
         new_group.sort()
         sorted_groups.append(new_group)
     sorted_groups.sort()
-    ## Returns list of boundary groups, with each containing all potential placements for that boundary ##
     return sorted_groups
 
 
 def eliminate_short_modules(sequence, initial_solution, boundary_groups, cutoff=6):
-    ## Iteratively removes boundaries that result in modules shorter than the specified 'cutoff' ##
+    ''' 
+    Removes short modules from the solution by merging nearby boundary groups
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    initial_solution: list of boundary positions optimized by optimize_boundaries()
+    bounadry_groups: list of groups containing boundary positions clustered by cluster_boundaries()
+    cutoff: shortest module to allow in output
+    Outputs updated solution (list of re-optimized positions) and boundary groups (some will have been merged into one)
+    '''
     module_lengths = list()
     module_lengths.append(initial_solution[0])
     for x in np.arange(1, len(initial_solution), 1):
@@ -338,7 +396,6 @@ def eliminate_short_modules(sequence, initial_solution, boundary_groups, cutoff=
     for group in boundary_groups:
         considered_groups.append(group.copy())
     temporary_solution = initial_solution.copy()
-    ## If solution has module shorter than the 'cutoff', the two boundary groups are merged into one boundary, whose postiion is then reoptimized ##
     while shortest_mod < cutoff:
         module_lengths = list()
         module_lengths.append(temporary_solution[0])
@@ -365,13 +422,18 @@ def eliminate_short_modules(sequence, initial_solution, boundary_groups, cutoff=
             module_lengths.append(
                 temporary_solution[z] - temporary_solution[z - 1])
         shortest_mod = np.min(module_lengths)
-    ## Returns updated solution (optimized) and remaining boundary groups (unoptimized) ##
     return temporary_solution.copy(), considered_groups.copy()
 
 
 def get_zscores(sequence, boundaries, affected_boundaries=[], z_scores=[]):
-    ## Computes the z-scores for each boundary in 'boundaries' in 'sequence' ##
-    ## 'affected_boundaries' denotes which z-scores may now be different and need computed ##
+    ''' 
+    Computes the z-scores for each boundary in sequence
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    boundaries: list of boundary positions identified in sequence
+    affected_boundaries: list of boundary positions for which to calculate z-scores; used during analysis to speed up the trimming step by not re-scoring boundaries that have not changed
+    z_scores: list of initial z-scores; boundaries not in affected_boundaries will be assigned the corresponding z-score from this list
+    Outputs list of float z-scores corresponding to the input boundaries
+    '''
     if len(affected_boundaries) == 0:
         z_scores = [0 for x in np.arange(0, len(boundaries), 1)]
         affected_boundaries = boundaries.copy()
@@ -388,7 +450,6 @@ def get_zscores(sequence, boundaries, affected_boundaries=[], z_scores=[]):
         z_set = list()
         count = 0
         while count < 500:
-            ## Each region is scrambled 500 times, and the boundary with the highest chi-score is identified in each ##
             scramble = ''.join(random.sample(region[0], len(region[0])))
             scores = list()
             for x in np.arange(region[1], len(region[0]) - (region[1] - 1), 1):
@@ -396,23 +457,28 @@ def get_zscores(sequence, boundaries, affected_boundaries=[], z_scores=[]):
                     scramble[0:int(x)], scramble[int(x):]))
             z_set.append(np.max(scores))
             count = count + 1
-        ## Mean and standard deviation of random scores used to calculate boundary z-scores ##
         if np.std(z_set) != 0:
             z_scores[n - 1] = round((region[2] -
                                     np.mean(z_set)) / np.std(z_set), 3)
         else:
             z_scores[n - 1] = 0
-    ## Returns list of z-scores corresponding to each module boundary ##
     return z_scores
 
 
 def trim_boundaries(sequence, initial_solution, initial_zscores, boundary_groups, cutoff=1.96):
-    ## Iteratively removes boundary groups, reoptimizes those that remain, and comptues their z-scores until all remaining boundaries have z-scores abot the 'cutoff' ##
+    ''' 
+    Trims boundaries in solution by iteratively removing those with low z-scores and reoptimizing those that remain
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    initial_solution: list of optimized boundary placements before trimming begins
+    initial_zscores: list of initial z-scores for initial boundaries
+    boundary_groups: list of groups from which each bounadry's position can be optimized
+    cutoff: this function finishes when all remaining boundaries have z-scores above this value; a z-score of 1.96 corresponds to a confidence level of 95%
+    Outputs list of solutions (optimized boundary positions after each iteration) and list of corresponding z-scores
+    '''
     trimmed_solutions = [initial_solution.copy()]
     trimmed_zscores = [initial_zscores.copy()]
     min_zscore = np.min(initial_zscores)
     considered_groups = boundary_groups.copy()
-    ## If lowest z-score is lower than cutoff, that boundary group is removed and the optimization/scoring step is repeated ##
     while min_zscore < cutoff:
         n = trimmed_zscores[-1].index(min_zscore)
         new_groups = list()
@@ -446,7 +512,6 @@ def trim_boundaries(sequence, initial_solution, initial_zscores, boundary_groups
                     if new_positions[x] != trimmed_solutions[-1][x] or new_positions[x + 1] != trimmed_solutions[-1][x + 1] or new_positions[x - 1] != trimmed_solutions[-1][x - 1]:
                         if new_positions[x] != 0:
                             affected_boundaries.append(new_positions[x])
-            ## Optimized positions and their z-scores are saved after each iteration to be recalled as desired ##
             trimmed_solutions.append(new_solution.copy())
             new_zscores = get_zscores(
                 sequence, trimmed_solutions[-1], affected_boundaries, new_zscores)
@@ -454,13 +519,17 @@ def trim_boundaries(sequence, initial_solution, initial_zscores, boundary_groups
             min_zscore = np.min(new_zscores)
         else:
             min_zscore = 3.0
-    ## Process repeats until all z-scores are above 'cutoff' or no boundary groups remain ##
-    ## Outputs list of solutions and list of corresponding z-scores for each iteration ##
     return trimmed_solutions, trimmed_zscores
 
 
 def analyze_sequence(sequence, window_sizes=[6, 8, 10, 12, 14, 16, 18, 20, 22], groups='twenty'):
-    ## Combines analysis functions into one that analyzes a 'sequence' with specified 'window_sizes' and runs whole analysis ##
+    ''' 
+    Performs the complete Chi-Score Analysis on input sequence from pairwise matrix generation to z-score validation
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    window_sizes: list of integers corresponding to which subsequence lengths to predict boundary positions with; even integers recommended
+    groups: amino acid grouping scheme to use, see 'residue groups' for list of grouping schemes
+    Outputs list of solutions, each containing a list of boundary positions and a list of corresponding z-scores
+    '''
     window_groups = list()
     heatmap_scores = list()
     print(
@@ -473,12 +542,10 @@ def analyze_sequence(sequence, window_sizes=[6, 8, 10, 12, 14, 16, 18, 20, 22], 
         boundaries = subsequence_to_boundary(get_minima(insulation_scores), window_size)
         heatmap_scores.append(corr_scores)
         window_groups.append(boundaries)
-    ## Boundary groups are clustered by residue proximity and initially optimized ##
     print('Now clustering boundaries and determining initial solution.')
     boundary_groups = cluster_boundaries(window_groups)
     bgs = boundary_groups.copy()
     initial_solution = optimize_boundaries(sequence, boundary_groups)
-    ## Short modules are eliminated from initial solution ##
     module_lengths = list()
     module_lengths.append(initial_solution[0])
     for x in np.arange(1, len(initial_solution), 1):
@@ -488,7 +555,6 @@ def analyze_sequence(sequence, window_sizes=[6, 8, 10, 12, 14, 16, 18, 20, 22], 
             'Short modules found in initial solution. Now merging relevant boundary groups.')
         initial_solution, boundary_groups = eliminate_short_modules(
             sequence, initial_solution, boundary_groups)
-    ## Z-Scores are calculated and iterative trimming process is performed ##
     print('Now calculating z-scores and trimming low-confidence boundaries.')
     initial_zscores = get_zscores(sequence, initial_solution)
     trimmed_solutions, trimmed_zscores = trim_boundaries(
@@ -496,13 +562,14 @@ def analyze_sequence(sequence, window_sizes=[6, 8, 10, 12, 14, 16, 18, 20, 22], 
     solutions = [[initial_solution, initial_zscores]]
     for x in np.arange(0, len(trimmed_solutions), 1):
         solutions.append([trimmed_solutions[x], trimmed_zscores[x]])
-    ## Outputs list of solutions, each containing boundary placements and corresponding z-scores ##
     return solutions
 
 
 def try_analysis(sequence, groups=residue_groups['twenty']):
-    ## Function that attempts analysis on sequence and moves on if failed ##
-    ## Useful for running long lists of sequences where some might fail for various reasons ##
+    ''' 
+    Function that tries the full Chi-Score Analysis on input sequence and assumes no modules were found in sequence fails.
+    Useful for analyzing large sets of sequences so that sequences that fail to be analyzed (for whatever reason) don't hault the process.
+    '''
     try:
         results = analyze_sequence(sequence, groups=groups)
     except:
@@ -510,9 +577,16 @@ def try_analysis(sequence, groups=residue_groups['twenty']):
     finally:
         return results
 
-def plot_solution(sequence, corr_scores, solution, window = 11, name = 'input sequence', outfile=False):
-    ## Plots 'corr_scores' matrix ad local complexity for 'sequence' and maps 'solution' as vertical lines ##
-    ## If specified, saves figure to outfile ##
+def plot_solution(sequence, corr_scores, solution, window = 12, name = 'input sequence'):
+    '''
+    Visualizes results of analysis for input sequence; includes correlated matrix, bounadry positions, and local complexity plots
+    sequence: string of capitalized amino acid characters (ex: 'MSTAVG...')
+    corr_scores: matrix of pairwise subsequence correlation coefficients to be rendered
+    solution: bounadary positions to be plotted over matrix
+    window: window size used to generate corr_scores, required to plot solutions correctly over matrix
+    name: name of the sequence being visualized; input as a string, this will be included in the title of the output figure
+    Outputs Pyplot matrix of pairwise correlation coefficients with the identified boundaries plotted as vertical lines; above the matrix is a plot of local sequence complexity
+    '''
     local_complexities = get_complexity(sequence, window)
     fig, ([ax0, ax2], [ax1, ax3]) = plt.subplots(nrows = 2, ncols = 2, sharex = True, gridspec_kw={'height_ratios': [0.75, 7], 'width_ratios': [7, 1]}, figsize = [8, 7.75])
     ax0.set_title('Complexity and Correlated Heatmap for {}'.format(name))
@@ -543,7 +617,6 @@ def plot_solution(sequence, corr_scores, solution, window = 11, name = 'input se
     lc.set_array(y)
     lc.set_linewidth(1)
     line = ax0.add_collection(lc)
-    # Add in color bars for both heatmap and complexity plot #
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes("right", size="5%", pad=0.1)
     divider2 = make_axes_locatable(ax0)
@@ -552,7 +625,6 @@ def plot_solution(sequence, corr_scores, solution, window = 11, name = 'input se
     cbar1 = plt.colorbar(line, cax=cax2, ticks=[round(y.min(), 2), round(y.max(), 2)])
     cbar1.ax.set_ylabel('SHANNON\nENTROPY', rotation = 0, labelpad=5, fontsize='x-small', y=0.7, ha='left')
     cbar0.ax.set_ylabel('PEARSON\nCORRELATION\nCOEFFICIENT', rotation=0, labelpad=-5, fontsize='x-small', y=0.55, ha='left')
-    # Hide extra subplots and remove empty space #
     ax2.axis('off')
     ax3.axis('off')
     fig.subplots_adjust(wspace=0, hspace=0)
