@@ -459,7 +459,7 @@ def trim_boundaries(sequence, initial_solution, initial_zscores, boundary_groups
     return trimmed_solutions, trimmed_zscores
 
 
-def analyze_sequence(sequence, window_sizes=[5, 7, 9, 11, 13, 15, 17, 19, 21], groups='twenty'):
+def analyze_sequence(sequence, window_sizes=[6, 8, 10, 12, 14, 16, 18, 20, 22], groups='twenty'):
     ## Combines analysis functions into one that analyzes a 'sequence' with specified 'window_sizes' and runs whole analysis ##
     window_groups = list()
     heatmap_scores = list()
