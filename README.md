@@ -22,7 +22,7 @@ For the most streamlined use of the algorithm, the Chi-Score Analysis is also av
 
 # Dependencies
 The Chi-Score Analysis is dependent on the following Python packages, which must be installed in the environment which the user wishes to run the algorithm:
-- jupyter >= 1.0.0
+- jupyter >= 1.0.0 (only required for notebook implementations)
 - matplotlib >= 3.7.2
 - numpy >= 1.25.2
 - pandas >= 2.0.3
