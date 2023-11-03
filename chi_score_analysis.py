@@ -565,7 +565,7 @@ def analyze_sequence(sequence, window_sizes=[6, 8, 10, 12, 14, 16, 18, 20, 22], 
     return solutions
 
 
-def try_analysis(sequence, groups=residue_groups['twenty']):
+def try_analysis(sequence, groups='twenty'):
     ''' 
     Function that tries the full Chi-Score Analysis on input sequence and assumes no modules were found in sequence fails.
     Useful for analyzing large sets of sequences so that sequences that fail to be analyzed (for whatever reason) don't hault the process.
